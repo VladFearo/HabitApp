@@ -1,118 +1,150 @@
-import Habit from '../components/Habit'
-import { useState } from 'react'
+// DashboardPage.jsx
+import React, { useState, useEffect } from 'react';
+import Habit from '../components/Habit';
+import Container from 'react-bootstrap/Container';
+import Button from 'react-bootstrap/Button';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import Card from 'react-bootstrap/Card';
 
-const exampleHabits = [
+// Example habit data
+const initialHabits = [
     {
         id: 1,
         name: "Morning Meditation",
+        completed: 0,
+        total: 5,
         difficulty: "easy",
-        type: "regular",
-        completed: false,
-        streak: 5,
-        schedule: [0, 1, 2, 3, 4, 5, 6] // All days of the week
+        streak: 3
     },
     {
         id: 2,
-        name: "Gym Workout",
+        name: "Workout",
+        completed: 2,
+        total: 10,
         difficulty: "hard",
-        type: "regular",
-        completed: true,
-        streak: 8,
-        schedule: [1, 3, 5] // Monday, Wednesday, Friday
+        streak: 5
     },
     {
         id: 3,
-        name: "Drink Water",
+        name: "Reading",
+        completed: 0,
+        total: 1,
         difficulty: "medium",
-        type: "counter",
-        targetCount: 8,
-        currentCount: 3,
-        completed: false,
-        streak: 12,
-        schedule: [0, 1, 2, 3, 4, 5, 6] // Every day
-    },
-    {
-        id: 4,
-        name: "Read 20 Pages",
-        difficulty: "medium",
-        type: "regular",
-        completed: false,
-        streak: 0, // Newly added habit
-        schedule: [0, 1, 2, 3, 4, 5, 6] // Every day
-    },
-    {
-        id: 5,
-        name: "Code Practice",
-        difficulty: "hard",
-        type: "counter",
-        targetCount: 5,
-        currentCount: 5,
-        completed: true,
-        streak: 15,
-        schedule: [1, 2, 3, 4, 5] // Weekdays only
-    },
-    {
-        id: 6,
-        name: "Evening Stretching",
-        difficulty: "easy",
-        type: "regular",
-        completed: false,
-        streak: 3,
-        schedule: [0, 1, 2, 3, 4, 5, 6] // Every day
+        streak: 140
     }
 ];
 
 function DashboardPage() {
-    const [habits, setHabits] = useState(exampleHabits);
+    // State for habits, experience and level
+    const [habits, setHabits] = useState(initialHabits);
+    const [exp, setExp] = useState(0);
+    const [level, setLevel] = useState(1);
 
-
-    const handleComplete = (habitId) => {
-        // Update habit completion status
-        setHabits(habits.map(habit =>
-            habit.id === habitId
-                ? { ...habit, completed: true, streak: habit.streak + 1 }
-                : habit
-        ));
+    // Calculate XP needed for next level
+    const xpForNextLevel = (currentLevel) => {
+        const baseXP = 100;
+        return Math.round(baseXP * Math.pow(1.5, currentLevel - 1));
     };
 
+    // Get current XP requirement
+    const expToNextLevel = xpForNextLevel(level);
 
-    const handleIncrement = (habitId) => {
-        // Increment counter habit
-        setHabits(habits.map(habit => {
-            if (habit.id === habitId) {
-                const newCount = habit.currentCount + 1;
-                const completed = newCount >= habit.targetCount;
-                const newStreak = completed ? habit.streak + 1 : habit.streak;
-                return {
-                    ...habit,
-                    currentCount: newCount,
-                    completed: completed,
-                    streak: newStreak
-                };
-            }
-            return habit;
-        }));
+    // Calculate percentage for exp bar
+    const expPercentage = (exp / expToNextLevel) * 100;
+
+    // Calculate XP based on habit difficulty and streak
+    const calculateXP = (difficulty, streak = 0) => {
+        let baseXP = 0;
+
+        // Base XP by difficulty
+        switch (difficulty) {
+            case "easy": baseXP = 10; break;
+            case "medium": baseXP = 20; break;
+            case "hard": baseXP = 30; break;
+            default: baseXP = 10;
+        }
+
+        // Streak multiplier
+        let multiplier = 1;
+        if (streak >= 30) multiplier = 3;
+        else if (streak >= 14) multiplier = 2;
+        else if (streak >= 7) multiplier = 1.5;
+        else if (streak >= 3) multiplier = 1.2;
+
+        return Math.round(baseXP * multiplier);
+    };
+
+    // Handle habit completion
+    const onComplete = (habitId, difficulty, streak) => {
+        // Update streak for the completed habit
+        setHabits(prevHabits =>
+            prevHabits.map(habit =>
+                habit.id === habitId
+                    ? { ...habit, streak: habit.streak + 1 }
+                    : habit
+            )
+        );
+
+        // Get the updated streak value
+        const updatedStreak = habits.find(h => h.id === habitId).streak + 1;
+
+        // Calculate earned XP
+        const earnedXP = calculateXP(difficulty, updatedStreak);
+
+        // Update total XP
+        const newExp = exp + earnedXP;
+
+        // Check for level up
+        if (newExp >= expToNextLevel) {
+            setLevel(prevLevel => prevLevel + 1);
+            setExp(newExp - expToNextLevel);
+            // You could add a level-up notification here
+        } else {
+            setExp(newExp);
+        }
     };
 
     return (
-        <div className="container py-4">
-            <h1 className="mb-4">My Habits</h1>
+        <Container className="py-4">
+            {/* XP Progress Bar */}
+            <Card className="mb-4">
+                <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                        <h5 className="mb-0">Level {level}</h5>
+                        <span>{exp}/{expToNextLevel} XP</span>
+                    </div>
+                    <ProgressBar
+                        now={expPercentage}
+                        variant="success"
+                        animated
+                    />
+                </Card.Body>
+            </Card>
 
-            {/* Uniform list of habits */}
-            <div className="card">
-                <div className="card-body p-2">
-                    {habits.map(habit => (
-                        <Habit
-                            key={habit.id}
-                            habit={habit}
-                            onComplete={handleComplete}
-                            onIncrement={handleIncrement}
-                        />
-                    ))}
-                </div>
-            </div>
-        </div>
+            <Container className="mb-4">
+                <h1>Dashboard</h1>
+            </Container>
+
+            <Container className="mb-3">
+                {habits.map(habit => (
+                    <Habit
+                        key={habit.id}
+                        id={habit.id}
+                        name={habit.name}
+                        initialCompleted={habit.completed}
+                        total={habit.total}
+                        difficulty={habit.difficulty}
+                        streak={habit.streak}
+                        onComplete={onComplete}
+                    />
+                ))}
+            </Container>
+
+            <Container>
+                <Button variant="primary">Add Habit</Button>
+            </Container>
+        </Container>
     );
 }
 
-export default DashboardPage
+export default DashboardPage;
