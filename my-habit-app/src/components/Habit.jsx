@@ -1,88 +1,59 @@
-import { Card, Badge, Button, ProgressBar } from 'react-bootstrap';
+import React from 'react'
+import Card from 'react-bootstrap/Card';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import Button from 'react-bootstrap/Button';
+import Badge from 'react-bootstrap/Badge';
 
-function Habit({ habit, onComplete, onIncrement }) {
-    // Get the appropriate difficulty badge styling
-    const getDifficultyBadge = (difficulty) => {
-        const badges = {
-            easy: "success",
-            medium: "primary",
-            hard: "danger"
-        };
-        return badges[difficulty] || "secondary";
-    };
+function Habit({ id, name, initialCompleted, total, difficulty, streak, onComplete }) {
+    const [completed, setCompleted] = React.useState(initialCompleted);
+    const precentage = (completed / total) * 100;
 
-    // Handle completion of a regular habit
-    const handleComplete = () => {
-        onComplete(habit.id);
-    };
-
-    // Handle increment for counter habits
     const handleIncrement = () => {
-        onIncrement(habit.id);
-    };
-
+        if (completed + 1 < total) {
+            setCompleted(completed + 1);
+        } else if (completed + 1 === total) {
+            // Just completed
+            setCompleted(completed + 1);
+            // Call the onComplete callback with habit id, difficulty and streak
+            onComplete(id, difficulty, streak);
+        }
+    }
     return (
-        <Card className="mb-2">
-            <Card.Body className="d-flex align-items-center p-3">
-                {/* Left section: habit name and badge */}
-                <div className="d-flex align-items-center me-3" style={{ width: "30%" }}>
-                    <span className="fw-bold me-2">{habit.name}</span>
-                    <Badge bg={getDifficultyBadge(habit.difficulty)} pill>
-                        {habit.difficulty}
+        <Card body>
+            <div className="d-flex align-items-center">
+                <div className="me-3" >
+                    <div>{name}</div>
+                    <Badge bg={
+                        {
+                            "easy": "success",
+                            "medium": "primary",
+                            "hard": "danger"
+                        }[difficulty] || "secondary"  // "secondary" as fallback
+                    }>
+                        {difficulty}
                     </Badge>
-                </div>
-
-                {/* Middle section: streak and/or progress bar */}
-                <div className="flex-grow-1 d-flex align-items-center">
-                    {habit.streak > 0 && (
-                        <Badge bg="warning" text="dark" pill className="me-3">
-                            <i className="bi bi-fire me-1"></i>{habit.streak}
+                    {streak > 0 && (
+                        <Badge bg="warning" text="dark" className="ms-1">
+                            Streak: {streak}
                         </Badge>
                     )}
-
-                    {habit.type === 'counter' ? (
-                        <div className="w-100 position-relative">
-                            <ProgressBar
-                                now={(habit.currentCount / habit.targetCount) * 100}
-                                variant="success"
-                                style={{ height: '24px' }}
-                            />
-                            <div className="position-absolute top-50 start-50 translate-middle text-dark fw-bold">
-                                {habit.currentCount}/{habit.targetCount}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex-grow-1"></div> // Spacer for regular habits
-                    )}
                 </div>
-
-                {/* Right section: action button */}
-                <div style={{ width: "100px", textAlign: "right" }}>
-                    {habit.completed ? (
-                        <Badge bg="success" className="p-2">
-                            <i className="bi bi-check-circle me-1"></i>Done
-                        </Badge>
-                    ) : habit.type === 'counter' ? (
-                        <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={handleIncrement}
-                        >
-                            +1
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={handleComplete}
-                        >
-                            Complete
-                        </Button>
-                    )}
+                <div className="flex-grow-1 me-3">
+                    <ProgressBar
+                        variant='success'
+                        now={precentage}
+                        label={`${completed}/${total}`} />
                 </div>
-            </Card.Body>
+                <Button
+                    variant={completed >= total ? "secondary" : "success"}
+                    onClick={handleIncrement}
+                    disabled={completed >= total}
+                >
+                    {completed >= total ? 'Completed' : 'Complete'}
+                </Button>
+            </div>
         </Card>
-    );
+    )
 }
 
-export default Habit;
+export default Habit
