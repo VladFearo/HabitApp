@@ -1,1 +1,5 @@
 @import "bootstrap/dist/css/bootstrap.min.css";
+
+body {
+  background: linear-gradient(to right, #f8f9fa, #e2e6ea);
+}
