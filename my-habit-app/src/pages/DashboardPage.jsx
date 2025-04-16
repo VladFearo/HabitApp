@@ -5,6 +5,7 @@ import Container from 'react-bootstrap/Container';
 import Button from 'react-bootstrap/Button';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Card from 'react-bootstrap/Card';
+import Swal from 'sweetalert2';
 
 // Example habit data
 const initialHabits = [
@@ -104,6 +105,77 @@ function DashboardPage() {
         }
     };
 
+    // Improved habit creation function
+    const handleCreation = () => {
+        Swal.fire({
+            title: 'Add New Habit',
+            html: `
+            <div class="form-group mb-3">
+                <label for="swal-habit-name" class="form-label">Habit Name</label>
+                <input id="swal-habit-name" class="form-control" placeholder="Enter habit name">
+            </div>
+            <div class="form-group mb-3">
+                <label for="swal-difficulty" class="form-label">Difficulty</label>
+                <select id="swal-difficulty" class="form-select">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label for="swal-total" class="form-label">Total completions needed</label>
+                <input type="number" id="swal-total" class="form-control" min="1" value="1">
+            </div>
+        `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Add Habit',
+            preConfirm: () => {
+                const habitName = document.getElementById('swal-habit-name').value;
+                const difficulty = document.getElementById('swal-difficulty').value;
+                const total = parseInt(document.getElementById('swal-total').value);
+
+                if (!habitName) {
+                    Swal.showValidationMessage('Please enter a habit name');
+                    return false;
+                }
+
+                if (isNaN(total) || total < 1) {
+                    Swal.showValidationMessage('Please enter a valid number for total completions');
+                    return false;
+                }
+
+                return { habitName, difficulty, total };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const { habitName, difficulty, total } = result.value;
+
+                // Create new habit
+                const newHabit = {
+                    id: habits.length + 1, // Simple ID generation
+                    name: habitName,
+                    completed: 0,
+                    total: total,
+                    difficulty: difficulty,
+                    streak: 0
+                };
+
+                // Add to habits state
+                setHabits([...habits, newHabit]);
+
+                // Show success message
+                Swal.fire({
+                    title: 'Success!',
+                    text: `Your habit "${habitName}" has been added.`,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    };
+
     return (
         <Container className="py-4">
             {/* XP Progress Bar */}
@@ -141,7 +213,7 @@ function DashboardPage() {
             </Container>
 
             <Container>
-                <Button variant="primary">Add Habit</Button>
+                <Button variant="primary" onClick={handleCreation}>Add Habit</Button>
             </Container>
         </Container>
     );
